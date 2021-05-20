@@ -14,14 +14,13 @@ type openConnection struct {
 	Secret string
 }
 
-func ConnectToHubAsServer(name string, proxy ProxyServer) (Hub, error) {
+func ConnectToHubAsServer(api, name string, proxy ProxyServer) (Hub, error) {
 
-	addr := "localhost:10000"
     hub := hub{
     	proxy: proxy,
 	}
 
-	err := hub.StartAsServer(addr, name)
+	err := hub.StartAsServer(api, name)
 	if err != nil {
 		return nil, err
 	}
@@ -29,14 +28,13 @@ func ConnectToHubAsServer(name string, proxy ProxyServer) (Hub, error) {
 	return &hub, nil
 }
 
-func ConnectToHubAsClient(name string, proxy ProxyServer) (*OnConnectionData, error) {
+func ConnectToHubAsClient(api, name string, proxy ProxyServer) (*OnConnectionData, error) {
 
-	addr := "localhost:10000"
 	hub := hub{
 		proxy: proxy,
 	}
 
-	data, err := hub.StartAsClient(addr, name)
+	data, err := hub.StartAsClient(api, name)
 	if err != nil {
 		return nil, err
 	}

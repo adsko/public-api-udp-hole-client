@@ -5,6 +5,7 @@ import (
 	"client/server"
 	"client/web"
 	"encoding/binary"
+	"gopkg.in/alecthomas/kingpin.v2"
 	"log"
 	"net"
 	"os"
@@ -24,21 +25,30 @@ Connection:
 	Connection is established, switch to connection module
  */
 
+var (
+	app = kingpin.New("hole-app", "")
+	api = app.Flag("api", "Address of the API server").Required().String()
+
+	runClient = app.Command("run-client", "Run client")
+	runServer = app.Command("run-api", "Run server")
+
+)
+
 func main () {
-	switch os.Args[1] {
-	case "run-client":
+	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+	case runClient.FullCommand():
 		proxyServer := server.RunProxyServer()
-		connectionData, err := server.ConnectToHubAsClient("test", proxyServer)
+		connectionData, err := server.ConnectToHubAsClient(*api,"test", proxyServer)
 		if err != nil {
 			log.Panic(err)
 		}
 
 		web.Run(proxyServer, connectionData)
 
-	case "run-api":
+	case runServer.FullCommand():
 		proxyServer := server.RunProxyServer()
 
-		hub, err := server.ConnectToHubAsServer("test", proxyServer)
+		hub, err := server.ConnectToHubAsServer(*api, "test", proxyServer)
 		if err != nil {
 			log.Panic(err)
 		}
