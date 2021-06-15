@@ -2,6 +2,7 @@ package main
 
 import (
 	"client/connection"
+	"client/hub"
 	"client/server"
 	"client/web"
 	"encoding/binary"
@@ -11,9 +12,8 @@ import (
 	"os"
 )
 
-
 /*
-Connection:
+ClientConnection:
 	TODO: Client has no server address!
 	Server sends PING message for all client addresses with address
 	Client sends PONG message for all server addresses with 0.0.0.0 address
@@ -22,8 +22,8 @@ Connection:
 	Client sends PONG message with two addresses: selected address and address which used to send
 	Server receives messages and selects first
 
-	Connection is established, switch to connection module
- */
+	ClientConnection is established, switch to connection module
+*/
 
 var (
 	app = kingpin.New("hole-app", "")
@@ -31,22 +31,24 @@ var (
 
 	runClient = app.Command("run-client", "Run client")
 	runServer = app.Command("run-api", "Run server")
-
 )
 
-func main () {
+func main() {
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case runClient.FullCommand():
-		proxyServer := server.RunProxyServer()
-		connectionData, err := server.ConnectToHubAsClient(*api,"test", proxyServer)
+		proxyServer := connection.RunProxyServer()
+		connectionData, err := server.ConnectToHubAsClient(*api, "test", proxyServer)
 		if err != nil {
 			log.Panic(err)
 		}
 
-		web.Run(proxyServer, connectionData)
+		err = web.Run(proxyServer, connectionData)
+		if err != nil {
+			log.Panic(err)
+		}
 
 	case runServer.FullCommand():
-		proxyServer := server.RunProxyServer()
+		proxyServer := connection.RunProxyServer()
 
 		hub, err := server.ConnectToHubAsServer(*api, "test", proxyServer)
 		if err != nil {
@@ -57,13 +59,13 @@ func main () {
 		hubOnClose := hub.OnClose()
 		for {
 			select {
-			case <- hubOnClose:
+			case <-hubOnClose:
 				log.Println("Err: closed hub connection")
 				os.Exit(1)
-			case <- proxyOnClose:
+			case <-proxyOnClose:
 				log.Println("Err: closed web server")
 				os.Exit(1)
-			case data := <- hub.OnConnection():
+			case data := <-hub.OnConnection():
 				log.Printf("Client %s is trying to connect, with id %d and secret: %s", data.IPs, data.ClientID, data.Secret)
 				handleClient(proxyServer, data)
 			}
@@ -71,8 +73,8 @@ func main () {
 	}
 }
 
-func handleClient (proxyServer server.ProxyServer, data server.OnConnectionData) {
-	connection, err := proxyServer.Connect(connection.Secret(data.Secret), data.IPs)
+func handleClient(proxyServer connection.Connection, data hub.OnConnectionData) {
+	clientConnection, err := server.GetClientConnection(server.Secret(data.Secret), data.IPs)
 	if err != nil {
 		log.Println(err)
 	}
@@ -80,26 +82,26 @@ func handleClient (proxyServer server.ProxyServer, data server.OnConnectionData)
 	binaryClientId := make([]byte, 8)
 	binary.LittleEndian.PutUint64(binaryClientId, data.ClientID)
 
-	proxyServer.OnData(data.ClientID, connection.HandleData)
-	connection.OnSend(func(data []byte, ip *net.UDPAddr) error {
+	proxyServer.OnData(data.ClientID, clientConnection.HandleData)
+	clientConnection.OnSend(func(data []byte, ip *net.UDPAddr) error {
 		return proxyServer.Send(data, ip, binaryClientId)
 	})
 
 	defer func() {
 		recoverErr := recover()
 		if recoverErr != nil {
-			log.Println("Closed connection: ", recoverErr)
-			connection.Stop()
+			log.Println("Closed clientConnection: ", recoverErr)
+			clientConnection.Stop()
 			proxyServer.Clear(data.ClientID)
 		}
-		connection = nil
+		clientConnection = nil
 	}()
 
 	closed := make(chan string)
-	connection.StartServer(closed)
+	clientConnection.StartServer(closed)
 
-	go func () {
-		c := <- closed
-		log.Printf("Closed connection with: %d, reason: %s", data.ClientID, c)
+	go func() {
+		c := <-closed
+		log.Printf("Closed clientConnection with: %d, reason: %s", data.ClientID, c)
 	}()
 }
