@@ -227,7 +227,7 @@ func (c *clientConnection) Send(data []byte, ip *net.UDPAddr, handleACK bool) {
 			c.ackMap[messages.GetMessageId(data)] = 0
 		}
 		c.ackMapLock.Unlock()
-		if messages.GetMessageId(data)%10 == 0 {
+		if messages.GetMessageId(data)%10 == 0 && messages.GetMessageId(data) > 0 {
 			c.HandleACK(data, ip)
 		} else {
 			go c.HandleACK(data, ip)
@@ -244,7 +244,7 @@ func (c *clientConnection) HandleACK(message []byte, ip *net.UDPAddr) {
 		return
 	}
 
-	time.Sleep(4 * time.Second)
+	time.Sleep(time.Millisecond * 100)
 
 	if c.closed {
 		return
@@ -261,14 +261,20 @@ func (c *clientConnection) HandleACK(message []byte, ip *net.UDPAddr) {
 		c.ackMap[messages.GetMessageId(message)] += 1
 	}
 	if ok {
-		if ack > 5 {
+		if ack > 300 {
 			c.error <- fmt.Sprintf("no connection %d", messages.GetMessageId(message))
 			c.closed = true
 			c.ackMapLock.Unlock()
 			return
 		}
 		c.ackMapLock.Unlock()
-		c.Send(message, ip, true)
+
+		if ack%20 == 0 && ack > 0 {
+			log.Printf("Resend message (missing ACK) %d (ack retry: %d)", messages.GetMessageId(message), ack)
+			c.Send(message, ip, true)
+		} else {
+			c.HandleACK(message, ip)
+		}
 		return
 	}
 
@@ -362,6 +368,8 @@ CONNECTED:
 		return nil, nil, false, packetId
 	}
 	clientIP = udpClientIp
+
+	time.Sleep(time.Second * 2)
 	c.Send(messages.BuildInitMessage(c.serverSecret, c.GetAndIncCounter(), serverIP), udpClientIp, false)
 	return clientIP, serverIP, true, packetId
 }

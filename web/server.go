@@ -67,7 +67,6 @@ func Run(server connection.Connection, connectionData *hub.OnConnectionData) err
 	}
 
 	go sendPong(nil)
-
 	server.OnData(connectionData.ClientID, func(data []byte, port int) {
 		if receivedPing {
 			log.Println("Skipped PING because received")
@@ -87,7 +86,11 @@ func Run(server connection.Connection, connectionData *hub.OnConnectionData) err
 	})
 
 	for {
-		time.Sleep(5 * time.Second)
+		if !receivedPing {
+			go sendPong(nil)
+		}
+
+		time.Sleep(50 * time.Millisecond)
 	}
 }
 

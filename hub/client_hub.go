@@ -45,7 +45,7 @@ func (h *clientHUB) StartAsClient(host, name string) (*OnConnectionData, error) 
 		return nil, err
 	}
 
-	u := url.URL{Scheme: "http", Host: host, Path: "/connect"}
+	u := url.URL{Scheme: "https", Host: host, Path: "/connect"}
 	r, err := http.Post(u.String(), "application/json", bytes.NewBuffer(data))
 
 	if err != nil {

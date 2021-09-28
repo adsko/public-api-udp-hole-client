@@ -56,7 +56,6 @@ func (p *connection) watchData() {
 			clientId := binary.LittleEndian.Uint64(clientIdBytes)
 			callback, ok := p.dataCallbacks[clientId]
 			if !ok {
-				log.Printf("Could not find client: %d", clientId)
 			} else {
 				callback(buf[8:n], addr.Port)
 			}

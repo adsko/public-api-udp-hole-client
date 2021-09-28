@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"net/url"
+	"time"
 )
 
 type ServerHUB interface {
@@ -56,7 +57,7 @@ func (h *serverHUB) handleHubMessages() {
 func (h *serverHUB) startAsServer(host, name string) error {
 	h.closedConn = make(chan bool)
 	h.connection = make(chan OnConnectionData)
-	u := url.URL{Scheme: "ws", Host: host, Path: "/register"}
+	u := url.URL{Scheme: "wss", Host: host, Path: "/register"}
 
 	log.Printf("Connecting to HUB: %s", host)
 
@@ -89,6 +90,17 @@ func (h *serverHUB) startAsServer(host, name string) error {
 	}
 
 	err = connection.WriteJSON(registerData)
+
+	sendPing := func() {
+		for {
+			time.Sleep(time.Second * 5)
+			h.conn.WriteJSON(registerData)
+		}
+	}
+
+	if err == nil {
+		go sendPing()
+	}
 
 	return err
 }
