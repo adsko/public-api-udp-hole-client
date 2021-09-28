@@ -71,9 +71,10 @@ func (h *clientHUB) StartAsClient(host, name string) (*OnConnectionData, error) 
 	}
 
 	return &OnConnectionData{
-		IPs:      mappedIPs,
-		ClientID: serverData.ClientID,
-		Secret:   serverData.Secret,
+		IPs:          mappedIPs,
+		ClientID:     serverData.ClientID,
+		ClientSecret: serverData.ClientSecret,
+		ServerSecret: serverData.ServerSecret,
 	}, nil
 }
 

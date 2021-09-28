@@ -12,23 +12,26 @@ type register struct {
 }
 
 type openConnection struct {
-	Addr     []string
-	Port     string
-	ClientID uint64
-	Secret   string
+	Addr         []string
+	Port         string
+	ClientID     uint64
+	ClientSecret string
+	ServerSecret string
 }
 
 type OnConnectionData struct {
-	IPs      []utils.IP
-	ClientID uint64
-	Secret   string
+	IPs          []utils.IP
+	ClientID     uint64
+	ClientSecret string
+	ServerSecret string
 }
 
 type connectResponse struct {
-	Addr     []string
-	Port     string
-	ClientID uint64
-	Secret   string
+	Addr         []string
+	Port         string
+	ClientID     uint64
+	ClientSecret string
+	ServerSecret string
 }
 
 type connectBody struct {
