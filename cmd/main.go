@@ -31,13 +31,15 @@ var (
 
 	runClient = app.Command("run-client", "Run client")
 	runServer = app.Command("run-api", "Run server")
+
+	serverURL = runServer.Flag("server-url", "Address of source server").Required().String()
 )
 
 func main() {
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case runClient.FullCommand():
 		proxyServer := connection.RunProxyServer()
-		connectionData, err := server.ConnectToHubAsClient(*api, "test", proxyServer)
+		connectionData, err := hub.StartAsClient(proxyServer, *api, "test")
 		if err != nil {
 			log.Panic(err)
 		}
@@ -50,7 +52,7 @@ func main() {
 	case runServer.FullCommand():
 		proxyServer := connection.RunProxyServer()
 
-		hub, err := server.ConnectToHubAsServer(*api, "test", proxyServer)
+		hub, err := connectToHubAsServer(*api, "test", proxyServer)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -66,23 +68,22 @@ func main() {
 				log.Println("Err: closed web server")
 				os.Exit(1)
 			case data := <-hub.OnConnection():
-				log.Printf("Client %s is trying to connect, with id %d and secret: %s", data.IPs, data.ClientID, data.Secret)
-				handleClient(proxyServer, data)
+				handleClient(*serverURL, proxyServer, data)
 			}
 		}
 	}
 }
 
-func handleClient(proxyServer connection.Connection, data hub.OnConnectionData) {
-	clientConnection, err := server.GetClientConnection(server.Secret(data.Secret), data.IPs)
+func handleClient(serverURL string, proxyServer connection.Connection, hubData hub.OnConnectionData) {
+	clientConnection, err := server.GetClientConnection(server.Secret(hubData.ClientSecret), server.Secret(hubData.ServerSecret), hubData.IPs)
 	if err != nil {
 		log.Println(err)
 	}
 
 	binaryClientId := make([]byte, 8)
-	binary.LittleEndian.PutUint64(binaryClientId, data.ClientID)
+	binary.LittleEndian.PutUint64(binaryClientId, hubData.ClientID)
 
-	proxyServer.OnData(data.ClientID, clientConnection.HandleData)
+	proxyServer.OnData(hubData.ClientID, clientConnection.HandleData)
 	clientConnection.OnSend(func(data []byte, ip *net.UDPAddr) error {
 		return proxyServer.Send(data, ip, binaryClientId)
 	})
@@ -92,16 +93,25 @@ func handleClient(proxyServer connection.Connection, data hub.OnConnectionData) 
 		if recoverErr != nil {
 			log.Println("Closed clientConnection: ", recoverErr)
 			clientConnection.Stop()
-			proxyServer.Clear(data.ClientID)
+			proxyServer.Clear(hubData.ClientID)
 		}
 		clientConnection = nil
 	}()
 
 	closed := make(chan string)
-	clientConnection.StartServer(closed)
+	clientConnection.StartServer(serverURL, closed)
 
 	go func() {
 		c := <-closed
-		log.Printf("Closed clientConnection with: %d, reason: %s", data.ClientID, c)
+		log.Printf("Closed clientConnection with: %d, reason: %s", hubData.ClientID, c)
 	}()
+}
+
+func connectToHubAsServer(api, name string, proxy connection.Connection) (hub.ServerHUB, error) {
+	hubConnection, err := hub.StartAsServer(proxy, api, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return hubConnection, nil
 }

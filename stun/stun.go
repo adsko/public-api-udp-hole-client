@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-
 type udpStunClient struct {
-	c *net.UDPConn
+	c    *net.UDPConn
+	addr string
 }
 
 func (c *udpStunClient) Write(p []byte) (n int, err error) {
-	addr, err := net.ResolveUDPAddr("udp","stun.l.google.com:19302")
+	addr, err := net.ResolveUDPAddr("udp", c.addr)
 	if err != nil {
 		return
 	}
@@ -61,10 +61,10 @@ func GetAllSocketIps() ([]string, error) {
 	return s, nil
 }
 
-
-func GetConnectionIp(conn *net.UDPConn) (string, string, error) {
+func GetConnectionIp(conn *net.UDPConn, stunAddr string) (string, string, error) {
 	u := udpStunClient{
-		c: conn,
+		c:    conn,
+		addr: stunAddr,
 	}
 	c, err := stun.NewClient(&u, stun.WithNoConnClose)
 
@@ -125,9 +125,9 @@ func GetConnectionIp(conn *net.UDPConn) (string, string, error) {
 
 	for {
 		select {
-			case <- closed:
-				t.Close()
-				return ip, port, apiErr
+		case <-closed:
+			t.Close()
+			return ip, port, apiErr
 		default:
 			time.Sleep(100 * time.Millisecond)
 			_, err = t.Write([]byte("close_stun"))

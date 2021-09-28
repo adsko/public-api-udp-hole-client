@@ -45,9 +45,10 @@ func (h *serverHUB) handleHubMessages() {
 		}
 
 		h.connection <- OnConnectionData{
-			IPs:      data,
-			ClientID: c.ClientID,
-			Secret:   c.Secret,
+			IPs:          data,
+			ClientID:     c.ClientID,
+			ClientSecret: c.ClientSecret,
+			ServerSecret: c.ServerSecret,
 		}
 	}
 }
