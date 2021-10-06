@@ -54,10 +54,16 @@ func (h *serverHUB) handleHubMessages() {
 	}
 }
 
-func (h *serverHUB) startAsServer(host, name string) error {
+func (h *serverHUB) startAsServer(host, name string, secure bool) error {
 	h.closedConn = make(chan bool)
 	h.connection = make(chan OnConnectionData)
-	u := url.URL{Scheme: "wss", Host: host, Path: "/register"}
+
+	scheme := "ws"
+	if secure {
+		scheme = "wss"
+	}
+
+	u := url.URL{Scheme: scheme, Host: host, Path: "/register"}
 
 	log.Printf("Connecting to HUB: %s", host)
 
@@ -113,12 +119,12 @@ func (h *serverHUB) OnClose() chan bool {
 	return h.closedConn
 }
 
-func StartAsServer(proxy proxy2.Connection, host, name string) (ServerHUB, error) {
+func StartAsServer(proxy proxy2.Connection, host, name string, secure bool) (ServerHUB, error) {
 	hub := serverHUB{
 		proxy: proxy,
 	}
 
-	err := hub.startAsServer(host, name)
+	err := hub.startAsServer(host, name, secure)
 
 	if err != nil {
 		return nil, err

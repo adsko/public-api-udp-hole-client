@@ -19,7 +19,7 @@ type clientHUB struct {
 	proxy proxy2.Connection
 }
 
-func (h *clientHUB) StartAsClient(host, name string) (*OnConnectionData, error) {
+func (h *clientHUB) StartAsClient(host, name string, secure bool) (*OnConnectionData, error) {
 	ips, ports, err := h.proxy.GetAddresses()
 
 	if err != nil {
@@ -45,7 +45,12 @@ func (h *clientHUB) StartAsClient(host, name string) (*OnConnectionData, error) 
 		return nil, err
 	}
 
-	u := url.URL{Scheme: "https", Host: host, Path: "/connect"}
+	scheme := "http"
+	if secure {
+		scheme = "https"
+	}
+
+	u := url.URL{Scheme: scheme, Host: host, Path: "/connect"}
 	r, err := http.Post(u.String(), "application/json", bytes.NewBuffer(data))
 
 	if err != nil {
@@ -78,10 +83,10 @@ func (h *clientHUB) StartAsClient(host, name string) (*OnConnectionData, error) 
 	}, nil
 }
 
-func StartAsClient(proxy proxy2.Connection, host, name string) (*OnConnectionData, error) {
+func StartAsClient(proxy proxy2.Connection, host, name string, secure bool) (*OnConnectionData, error) {
 	h := clientHUB{
 		proxy: proxy,
 	}
 
-	return h.StartAsClient(host, name)
+	return h.StartAsClient(host, name, secure)
 }
