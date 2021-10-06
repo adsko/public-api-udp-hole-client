@@ -14,7 +14,6 @@ import (
 
 /*
 ClientConnection:
-	TODO: Client has no server address!
 	Server sends PING message for all client addresses with address
 	Client sends PONG message for all server addresses with 0.0.0.0 address
 	Server retries PING messages up to N retires with delay M

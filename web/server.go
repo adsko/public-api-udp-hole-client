@@ -57,7 +57,11 @@ func Run(server connection.Connection, connectionData *hub.OnConnectionData) err
 			if sendOnAddr != nil {
 				message = messages.BuildPongMessage(clientCipher, getAndIncPacketId(), addr, sendOnAddr)
 			} else {
-				message = messages.BuildPongMessage(clientCipher, getAndIncPacketId(), addr, addr)
+				tmpAddr, err := net.ResolveUDPAddr("udp", "0.0.0.0:1000")
+				if err != nil {
+					log.Panic(err)
+				}
+				message = messages.BuildPongMessage(clientCipher, getAndIncPacketId(), addr, tmpAddr)
 			}
 			err = server.Send(message, addr, binaryClientId)
 			if err != nil {
