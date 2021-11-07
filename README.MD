@@ -1,9 +1,11 @@
-Serer/Client for UDP hole punching connection
+Serer/Client for UDP hole punching connection.
+
+For example echo server, see `examples` directory.
 
 
 ### Requirements
  * Go 1.16+
- * API server (https://github.com/adsko/public-api-udp-hole-server) which is available for server and client.
+ * Rendezvous API server (https://github.com/adsko/rendezvous-udp-hole-server) which is available for server and client.
 
 ### Build
  * `go build cmd/main.go`
@@ -13,15 +15,16 @@ Serer/Client for UDP hole punching connection
 
 Flags:                                                                           
  * `--help`     Show context-sensitive help (also try --help-long and --help-man).  
- * `--api=API`  Address of the API server (required)
+ * `--rendezvous-api=API`  Address of the API server (required)
+ * `--secure`   Use secure schemes in connection (https/wss)
 
 
 Commands:                                                                        
  * `help [<command>...]` Show help.
  * `run-client` Run client
- * `run-api --server-url=SERVER-URL` Run server                                                                   
+ * `run-api --server-url=SERVER-URL` Run server, where server url is destination server.                                                              
 
 
 ### Example usage:
- * `main.exe --api=make-public-server.herokuapp.com:443 run-api --server-url=localhost:4200`
- * `main.exe --api=make-public-server.herokuapp.com:443 run-client`
+ * `main.exe --rendezvous-api=make-public-server.herokuapp.com:443 --secure run-api --server-url=localhost:4200`
+ * `main.exe --rendezvous-api=make-public-server.herokuapp.com:443 --secure run-client`

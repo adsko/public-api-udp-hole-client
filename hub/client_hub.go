@@ -19,7 +19,7 @@ type clientHUB struct {
 	proxy proxy2.Connection
 }
 
-func (h *clientHUB) StartAsClient(host, name string, secure bool) (*OnConnectionData, error) {
+func (h *clientHUB) StartAsClient(rendezvousAPI, name string, secure bool) (*OnConnectionData, error) {
 	ips, ports, err := h.proxy.GetAddresses()
 
 	if err != nil {
@@ -50,7 +50,7 @@ func (h *clientHUB) StartAsClient(host, name string, secure bool) (*OnConnection
 		scheme = "https"
 	}
 
-	u := url.URL{Scheme: scheme, Host: host, Path: "/connect"}
+	u := url.URL{Scheme: scheme, Host: rendezvousAPI, Path: "/connect"}
 	r, err := http.Post(u.String(), "application/json", bytes.NewBuffer(data))
 
 	if err != nil {
@@ -83,10 +83,10 @@ func (h *clientHUB) StartAsClient(host, name string, secure bool) (*OnConnection
 	}, nil
 }
 
-func StartAsClient(proxy proxy2.Connection, host, name string, secure bool) (*OnConnectionData, error) {
+func StartAsClient(proxy proxy2.Connection, rendezvousAPI, name string, secure bool) (*OnConnectionData, error) {
 	h := clientHUB{
 		proxy: proxy,
 	}
 
-	return h.StartAsClient(host, name, secure)
+	return h.StartAsClient(rendezvousAPI, name, secure)
 }

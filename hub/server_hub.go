@@ -54,7 +54,7 @@ func (h *serverHUB) handleHubMessages() {
 	}
 }
 
-func (h *serverHUB) startAsServer(host, name string, secure bool) error {
+func (h *serverHUB) startAsServer(rendezvousAPI, name string, secure bool) error {
 	h.closedConn = make(chan bool)
 	h.connection = make(chan OnConnectionData)
 
@@ -63,9 +63,9 @@ func (h *serverHUB) startAsServer(host, name string, secure bool) error {
 		scheme = "wss"
 	}
 
-	u := url.URL{Scheme: scheme, Host: host, Path: "/register"}
+	u := url.URL{Scheme: scheme, Host: rendezvousAPI, Path: "/register"}
 
-	log.Printf("Connecting to HUB: %s", host)
+	log.Printf("Connecting to rendezvousAPI: %s", rendezvousAPI)
 
 	connection, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -119,12 +119,12 @@ func (h *serverHUB) OnClose() chan bool {
 	return h.closedConn
 }
 
-func StartAsServer(proxy proxy2.Connection, host, name string, secure bool) (ServerHUB, error) {
+func StartAsServer(proxy proxy2.Connection, rendezvousAPI, name string, secure bool) (ServerHUB, error) {
 	hub := serverHUB{
 		proxy: proxy,
 	}
 
-	err := hub.startAsServer(host, name, secure)
+	err := hub.startAsServer(rendezvousAPI, name, secure)
 
 	if err != nil {
 		return nil, err

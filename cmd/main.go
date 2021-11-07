@@ -25,9 +25,9 @@ ClientConnection:
 */
 
 var (
-	app = kingpin.New("hole-app", "")
-	api = app.Flag("api", "Address of the API server").Required().String()
-	secure = app.Flag("secure", "Usage of secure api").Bool()
+	app           = kingpin.New("hole-app", "")
+	rendezvousAPI = app.Flag("rendezvous-api", "Address of the API server").Required().String()
+	secure        = app.Flag("secure", "Usage of secure rendezvousAPI").Bool()
 
 	runClient = app.Command("run-client", "Run client")
 	runServer = app.Command("run-api", "Run server")
@@ -39,7 +39,7 @@ func main() {
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case runClient.FullCommand():
 		proxyServer := connection.RunProxyServer()
-		connectionData, err := hub.StartAsClient(proxyServer, *api, "test", *secure)
+		connectionData, err := hub.StartAsClient(proxyServer, *rendezvousAPI, "test", *secure)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -52,7 +52,7 @@ func main() {
 	case runServer.FullCommand():
 		proxyServer := connection.RunProxyServer()
 
-		hub, err := connectToHubAsServer(*api, "test", proxyServer)
+		hub, err := connectToHubAsServer(*rendezvousAPI, "test", proxyServer)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -107,8 +107,8 @@ func handleClient(serverURL string, proxyServer connection.Connection, hubData h
 	}()
 }
 
-func connectToHubAsServer(api, name string, proxy connection.Connection) (hub.ServerHUB, error) {
-	hubConnection, err := hub.StartAsServer(proxy, api, name, *secure)
+func connectToHubAsServer(rendezvousAPI, name string, proxy connection.Connection) (hub.ServerHUB, error) {
+	hubConnection, err := hub.StartAsServer(proxy, rendezvousAPI, name, *secure)
 	if err != nil {
 		return nil, err
 	}
