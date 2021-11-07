@@ -15,7 +15,7 @@ For example echo server, see `examples` directory.
 
 Flags:                                                                           
  * `--help`     Show context-sensitive help (also try --help-long and --help-man).  
- * `--rendezvous-api=API`  Address of the API server (required)
+ * `--rendezvous-api=API`  Address of the rendezvous API server which is required for connection establishment (required)
  * `--secure`   Use secure schemes in connection (https/wss)
 
 
